@@ -6,13 +6,14 @@ from .serializers import GuildSerializer, TeamSerializer, CharacterSerializer, A
 class GuildViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Guild.objects.all()
     serializer_class = GuildSerializer
+    queryset = Guild.objects.all().order_by('pk') # Added default ordering
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'realm']
     filterset_fields = ['name', 'realm', 'faction', 'region']
     ordering_fields = '__all__'
 
 class TeamViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Team.objects.all().select_related('guild')
+    queryset = Team.objects.all().select_related('guild').order_by('pk') # Added default ordering
     serializer_class = TeamSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'short_name', 'guild__name'] # For partial match on Team Name
@@ -52,7 +53,7 @@ class CharacterFilter(FilterSet):
         ]
 
 class CharacterViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Character.objects.all().prefetch_related('known_recipes', 'team', 'guild', 'playable_class', 'active_spec')
+    queryset = Character.objects.all().prefetch_related('known_recipes', 'team', 'guild', 'playable_class', 'active_spec').order_by('pk') # Added default ordering
     serializer_class = CharacterSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = CharacterFilter # Use the custom filterset
@@ -79,7 +80,7 @@ class ApplicationFilter(FilterSet):
 
 
 class ApplicationViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Application.objects.all().select_related('team', 'guild')
+    queryset = Application.objects.all().select_related('team', 'guild').order_by('pk') # Added default ordering
     serializer_class = ApplicationSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = ApplicationFilter
