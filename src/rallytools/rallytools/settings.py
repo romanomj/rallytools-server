@@ -29,6 +29,10 @@ SECRET_KEY = getenv('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+# Provide a default SECRET_KEY for local development/testing if not set in .env
+if not SECRET_KEY and DEBUG: # Now DEBUG is defined
+    SECRET_KEY = 'very-secret-key-for-testing-purposes-only-do-not-use-in-prod'
+
 ALLOWED_HOSTS = [getenv('DJANGO_HOST')]
 
 
@@ -46,6 +50,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.discord',
     'allauth.socialaccount.providers.battlenet',
+    'rest_framework',
     'rallytools',
     'guild',
     'gamedata',
