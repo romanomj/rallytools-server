@@ -111,7 +111,8 @@ class GameDataImporter(object):
                 )
                 num_success += 1
 
-        except Excetpino as e:
+        except Exception as e:
+            logger.error(f"ERROR: failed to import profession data for profession {profession['id']}: {e}")
             raise GameDataImportError(f"Failed to import profession data: {e}")
 
         return {"num_success": num_success}
@@ -135,7 +136,7 @@ class GameDataImporter(object):
                     )
                     num_success += 1
         except Exception as e:
-            raise GameDataImportError(f"Failed to import profession skill tier data: {e}, {profession.name}")
+            raise GameDataImportError(f"Failed to import profession skill tier data: {tier['id']} {tier['name']}: {e}")
 
         return {"num_success": num_success}
 

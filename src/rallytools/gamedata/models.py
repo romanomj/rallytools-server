@@ -48,7 +48,7 @@ class PlayableSpecialization(models.Model):
 
 class Profession(models.Model):
     id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=16)
+    name = models.CharField(max_length=21)
     icon = models.CharField(max_length=128)
 
     def __str__(self):
@@ -57,7 +57,7 @@ class Profession(models.Model):
 
 class ProfessionSkillTier(models.Model):
     id = models.IntegerField(primary_key=True)
-    name = models.CharField(max_length=32)
+    name = models.CharField(max_length=54)
     profession = models.ForeignKey(Profession, on_delete=models.CASCADE, related_name='tier')
 
     def __str__(self):
