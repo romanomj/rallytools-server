@@ -18,7 +18,7 @@ class TeamSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 class CharacterSerializer(serializers.ModelSerializer):
-    known_recipes = RecipeSerializer(many=True, read_only=True)
+    # known_recipes = RecipeSerializer(many=True, read_only=True) # Removed as per request
     team = TeamSerializer(read_only=True)
     guild = serializers.StringRelatedField(read_only=True)
     playable_class = serializers.StringRelatedField(read_only=True)
@@ -32,7 +32,7 @@ class CharacterSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'level', 'guild', 'guild_rank', 'realm', 'playable_class',
             'playable_race', 'playable_spec', 'icon', 'achievement_points',
-            'average_item_level', 'equipped_item_level', 'team', 'known_recipes', 'last_updated'
+            'average_item_level', 'equipped_item_level', 'team', 'last_updated' # Removed 'known_recipes'
         ]
         read_only_fields = fields
 
@@ -60,3 +60,6 @@ class ApplicationSerializer(serializers.ModelSerializer):
             'id', 'name', 'discord_name', 'guild', 'team', 'app_data', 'delivered'
         ]
         read_only_fields = fields
+
+class CharacterNameOnlySerializer(serializers.Serializer):
+    name = serializers.CharField(read_only=True)

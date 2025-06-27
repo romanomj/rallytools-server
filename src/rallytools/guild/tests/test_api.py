@@ -286,23 +286,7 @@ class CharacterAPITests(APITestCase):
         self.assertEqual(response.data['count'], 3) # All chars are in this team
         self.assertEqual(len(response.data['results']), 3)
 
-    def test_filter_character_by_known_recipe_partial(self):
-        url = reverse('character-list')
-        # Search for "Flask" - should match "Flask of the Titans"
-        response = self.client.get(url, {'known_recipes_name': 'Flask'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 2) # Char1 and Char2 know "Flask of the Titans"
-        self.assertEqual(len(response.data['results']), 2)
-        names = sorted([c['name'] for c in response.data['results']])
-        self.assertEqual(names, sorted([self.char1.name, self.char2.name]))
-
-    def test_filter_character_by_known_recipe_exact_on_potion(self):
-        url = reverse('character-list')
-        response = self.client.get(url, {'known_recipes_name': 'Greater Healing Potion'})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['count'], 1) # Only Char2 knows "Greater Healing Potion"
-        self.assertEqual(len(response.data['results']), 1)
-        self.assertEqual(response.data['results'][0]['name'], self.char2.name)
+# Removed test_filter_character_by_known_recipe_partial and test_filter_character_by_known_recipe_exact_on_potion
 
 
 @override_settings(SECRET_KEY='a-test-secret-key-for-development-only')
@@ -383,3 +367,75 @@ class ApplicationAPITests(APITestCase):
         self.assertEqual(response.data['count'], 1)
         self.assertEqual(len(response.data['results']), 1)
         self.assertEqual(response.data['results'][0]['name'], self.app2.name)
+
+
+@override_settings(SECRET_KEY='a-test-secret-key-for-development-only')
+class RecipeCharacterSearchAPITests(APITestCase):
+    def setUp(self):
+        self.guild = create_test_guild(id=400)
+        self.team = create_test_team(name="Recipe Testers", guild=self.guild, id=400)
+
+        self.recipe_flask = create_test_recipe(name="Super Flask of Power", id=401)
+        self.recipe_potion = create_test_recipe(name="Minor Healing Potion", id=402)
+        self.recipe_elixir = create_test_recipe(name="Elixir of Giants", id=403)
+
+        self.char1 = create_test_character(name="Alchemist Al", guild=self.guild, team=self.team, id=401)
+        self.char2 = create_test_character(name="Herbalist Herb", guild=self.guild, team=self.team, id=402)
+        self.char3 = create_test_character(name="Scribe Sky", guild=self.guild, team=self.team, id=403)
+        self.char4 = create_test_character(name="NoRecipes Ned", guild=self.guild, team=self.team, id=404)
+
+        self.char1.known_recipes.add(self.recipe_flask)
+        self.char2.known_recipes.add(self.recipe_flask, self.recipe_potion)
+        self.char3.known_recipes.add(self.recipe_potion)
+        # Char4 knows no recipes from this set
+
+        self.url = reverse('recipe-character-search')
+
+    def test_search_by_full_recipe_name(self):
+        response = self.client.get(self.url, {'name': "Super Flask of Power"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2) # Al and Herb
+        character_names = sorted([item['name'] for item in response.data])
+        self.assertEqual(character_names, sorted([self.char1.name, self.char2.name]))
+
+    def test_search_by_partial_recipe_name_flask(self):
+        response = self.client.get(self.url, {'name': "Flask"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2) # Al and Herb
+        character_names = sorted([item['name'] for item in response.data])
+        self.assertEqual(character_names, sorted([self.char1.name, self.char2.name]))
+
+    def test_search_by_partial_recipe_name_potion(self):
+        response = self.client.get(self.url, {'name': "Potion"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2) # Herb and Sky
+        character_names = sorted([item['name'] for item in response.data])
+        self.assertEqual(character_names, sorted([self.char2.name, self.char3.name]))
+
+    def test_search_returns_only_names_structure(self):
+        response = self.client.get(self.url, {'name': "Super Flask of Power"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertGreaterEqual(len(response.data), 1)
+        # Expecting list of dicts: [{'name': 'CharName1'}, ...]
+        self.assertIsInstance(response.data[0], dict)
+        self.assertIn('name', response.data[0])
+        # Ensure no other character fields are present
+        self.assertEqual(len(response.data[0].keys()), 1)
+
+
+    def test_search_no_match(self):
+        response = self.client.get(self.url, {'name': "Unknown Recipe"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
+    def test_search_no_recipe_name_param(self):
+        response = self.client.get(self.url) # No 'name' query parameter
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0) # View returns Character.objects.none()
+
+    def test_search_is_case_insensitive(self):
+        response = self.client.get(self.url, {'name': "super flask of power"}) # Lowercase
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        character_names = sorted([item['name'] for item in response.data])
+        self.assertEqual(character_names, sorted([self.char1.name, self.char2.name]))
