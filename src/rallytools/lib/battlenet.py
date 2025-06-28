@@ -164,6 +164,14 @@ class BattleNetAPI:
         endpoint = f'/profile/wow/character/{realm}/{name}'
         return self._make_request(endpoint, namespace)
 
+    def get_character_media(self, realm, name):
+        """
+        Retrieves a character avatar picture
+        """
+        namespace = f'profile-{self.region}'
+        endpoint = f'/profile/wow/character/{realm}/{name}/character-media'
+        return self._make_request(endpoint, namespace)
+
     def get_character_professions(self, realm, name):
         """
         Retrieves a character's profession data
@@ -172,6 +180,13 @@ class BattleNetAPI:
         endpoint = f'/profile/wow/character/{realm}/{name}/professions'
         return self._make_request(endpoint, namespace)
 
+    def get_character_specializations(self, realm, name):
+        """
+        Retrieves a character's talent loadouts and metadata
+        """
+        namespace = f'profile-{self.region}'
+        endpoint = f'/profile/wow/character/{realm}/{name}/specializations'
+        return self._make_request(endpoint, namespace)
 
     def get_playable_races(self, id=None):
         """

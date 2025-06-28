@@ -60,6 +60,9 @@ class Character(models.Model):
     active_spec = models.ForeignKey(PlayableSpecialization, on_delete=models.PROTECT, related_name='characters', help_text="Character's Active Specialization", null=True)
 
     icon = models.CharField(max_length=128, help_text="Wow Avatar Render Image", blank=True)
+    inset_icon = models.CharField(max_length=128, help_text="Wow Inset Render Image", blank=True)
+    character_model = models.CharField(max_length=128, help_text="Wow Character Render Image", blank=True)
+
     achievement_points = models.IntegerField(default=0)
 
     average_item_level = models.IntegerField(default=0)

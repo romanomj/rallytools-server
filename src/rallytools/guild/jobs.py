@@ -83,6 +83,7 @@ class GuildDataImporter(object):
 
             # Handle members removed from guild
             member_ids_to_remove = set(existing_member_ids) - added_or_skipped
+            logger.info(f"INFO: have members to remove: {len(member_ids_to_remove)}")
             for member_id in member_ids_to_remove:
                 member = Character.objects.filter(id=member_id)
                 member.guild = None
@@ -111,18 +112,43 @@ class GuildDataImporter(object):
         yesterday = datetime.now() - timedelta(days=1)
         characters = Character.objects.all() #filter(last_updated__lte=yesterday)
         logger.debug(f"DEBUG: need to sync {len(characters)} characters")
+
+        def extract_character_icons(character_media_response):
+            """
+            Checks through a list of dictionaries to return the correct icons associated with a character
+            """
+            icons = {
+                'icon': "",
+                "inset_icon": "",
+                "character_model": ""
+            }
+            assets = character_media_response['assets']
+            for asset in assets:
+                if asset['key'] == 'avatar':
+                    icons['icon'] = asset['value']
+                elif asset['key'] == 'inset':
+                    icons['inset_icon'] = asset['value']
+                elif asset['key'] == 'main-raw':
+                    icons['character_model'] = asset['value']
+            return icons
+
+                    
         for character in characters:
 
             try:
                 character_response = self.battlenet_client.get_character_summary(character.realm, character.name)
+                character_media_response =  self.battlenet_client.get_character_media(character.realm, character.name)
+                icons = extract_character_icons(character_media_response)
             except battlenet.BattleNetAPINotFoundError as e:
                 logger.warning(f"WARNING: character {character.id} not found. skipping")
                 characters_not_found.append(character.id)
                 continue
 
-            
+             
             active_spec = PlayableSpecialization.objects.get(id=character_response['active_spec']['id']) 
-            
+            character.icon = icons['icon']
+            character.inset_icon = icons['inset_icon']
+            character.character_model = icons['character_model']
             character.active_spec = active_spec
             character.achievement_points = character_response['achievement_points']
             character.average_item_level = character_response['average_item_level']
@@ -165,11 +191,10 @@ class GuildDataImporter(object):
             for profession_type in ['primaries', 'secondaries']:
                 for tiers in profession_response.get(profession_type, []):
                     for tier in tiers.get('tiers', []): #Some professions such as Archaeology don't have tiers
-                        logger.debug(f"TIER DATA: {tier}")
                         for recipe_response in tier.get('known_recipes', []): # People may have picked up a profession but have 0 known recipes
                             discovered_recipes.update([recipe_response['id']])
                             if recipe_response['id'] in known_recipes:
-                                logger.debug(f"DEBUG: skip alreayd known recipe {recipe_response['id']}")
+                                logger.debug(f"DEBUG: skip already known recipe {recipe_response['id']}")
                                 # Skip professions already known
                                 continue
 
